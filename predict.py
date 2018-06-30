@@ -9,6 +9,7 @@ import sys
 import pandas as pd
 import sklearn as sk
 import numpy
+from time import time
 
 colnames = ["product/productId",
             "review/userId",
@@ -26,64 +27,62 @@ df["review/date"] = pd.to_datetime(df["review/time"], unit="s")
 df = df[df["review/summary"].notnull()]
 
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import HashingVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.svm import LinearSVC
-from sklearn.neural_network import MLPClassifier
-from xgboost import XGBClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression, PassiveAggressiveClassifier
+from scipy.sparse import csr_matrix
 
-X = df['review/summary'].values
+vect = TfidfVectorizer(stop_words='english', ngram_range=(1,3))
+X_tfidf = vect.fit_transform(df['review/summary'].values)
+X = csr_matrix(X_tfidf)
 y = df['review/score'].values
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.33, random_state=42)
 
-vect = TfidfVectorizer(stop_words='english', ngram_range=(1,3))
+
 
 clf = Pipeline([
-    ('tfidf', vect),
-    ('MNB', MultinomialNB())
+    ('PAC', PassiveAggressiveClassifier())
 ])
 
+t0 = time()
 clf.fit(X_train, y_train)
+print("PassiveAggressive done in %fs" % (time() - t0))
 
 y_predict = clf.predict(X_test)
-print("MultinomialNB")
+print("PassiveAggressive")
 print(classification_report(y_test, y_predict))
 
+
+
 clf = Pipeline([
-    ('tfidf', vect),
-    ('SVC', LinearSVC())
+    ('SVC', LinearSVC(class_weight='balanced'))
 ])
 
+t0 = time()
 clf.fit(X_train, y_train)
+print("LinearSVC done in %fs" % (time() - t0))
 
 y_predict = clf.predict(X_test)
 print("LinearSVC")
 print(classification_report(y_test, y_predict))
 
-exit()
+
 
 clf = Pipeline([
-    ('tfidf', vect),
-    ('XGB', XGBClassifier(n_jobs=4))
+    ('LR', LogisticRegression(class_weight='balanced'))
 ])
 
+t0 = time()
 clf.fit(X_train, y_train)
+print("LogisticRegression done in %fs" % (time() - t0))
 
 y_predict = clf.predict(X_test)
-print("XGB")
-print(classification_report(y_test, y_predict))
-
-clf = Pipeline([
-    ('tfidf', vect),
-    ('MLayerP', MLPClassifier(n_jobs=4))
-])
-
-clf.fit(X_train, y_train)
-
-y_predict = clf.predict(X_test)
-print("MLayerP")
+print("LogisticRegression")
 print(classification_report(y_test, y_predict))
