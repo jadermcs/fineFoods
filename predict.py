@@ -2,50 +2,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
-from sklearn.feature_extraction.text import CountVectorizer
 
 import sys
-sys.path.insert(0,'/Users/joaoschubnell/Documents/fineFoods')
+# sys.path.insert(0,'/Users/joaoschubnell/Documents/fineFoods')
 
 import pandas as pd
 import sklearn as sk
 import numpy
 
-# with open("data/finefoods-cleaned.txt", "w+") as fout:
-#     with open("data/finefoods.txt", encoding="latin1") as file:
-#         for x in file.readlines():
-#             fout.write(x.replace("\"",""))
-# 
-# with open("data/finemuged.csv", "w+") as fout:
-#     print("",file=fout)
-#     with open("data/finefoods-cleaned.txt", encoding="latin1") as file:
-#         for x in file.readlines():
-#             l = x.split(": ")
-#             if x == "\n":
-#                 pass
-#             elif x.startswith("product/productId"):
-#                 print("\""+l[1].strip("\n")+"\"",
-#                       file=fout, end=",")
-#             elif x.startswith("review/userId"):
-#                 print("\""+l[1].strip("\n")+"\"",
-#                       file=fout, end=",")
-#             elif x.startswith("review/helpfulness"):
-#                 print("\""+l[1].strip("\n")+"\"",
-#                       file=fout, end=",")
-#             elif x.startswith("review/score"):
-#                 print("\""+l[1].strip("\n")+"\"",
-#                       file=fout, end=",")
-#             elif x.startswith("review/time"):
-#                 print("\""+l[1].strip("\n")+"\"",
-#                       file=fout, end=",")
-#             elif x.startswith("review/summary"):
-#                 print("\""+l[1].strip("\n")+"\"",
-#                       file=fout, end=",")
-#             elif x.startswith("review/text"):
-#                 print("\""+l[1].strip("\n")+"\"",
-#                       file=fout)
-# 
-# 
 colnames = ["product/productId",
             "review/userId",
             "review/helpfulness",
@@ -58,23 +22,68 @@ df = pd.read_csv("data/finemuged.csv", encoding="latin1", header=None,
                  names=colnames, quotechar = "\"")
 
 df["review/date"] = pd.to_datetime(df["review/time"], unit="s")
-stopw = []
-with open("data/stop_word.txt") as f:
-    for x in f.readlines():
-        stopw.append(x.strip("\n"))
-
-print(df[df["review/summary"].isnull()]["review/text"])
 
 df = df[df["review/summary"].notnull()]
 
-countvect = CountVectorizer(stop_words=stopw)
-review_text = countvect.fit_transform(df["review/text"].values.astype('U'))
-review_summary = countvect.fit_transform(df["review/summary"].values.astype('U'))
-# print(review_summary.shape)
-print(df.info())
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+from sklearn.svm import LinearSVC
+from sklearn.neural_network import MLPClassifier
+from xgboost import XGBClassifier
 
-df.to_csv('/Users/joaoschubnell/Documents/fineFoods/data/reviews.csv')
+X = df['review/summary'].values
+y = df['review/score'].values
 
-numpy.savetxt('Users/joaoschubnell/Documents/fineFoods/data/review_text.csv', review_text.torray(), delimiter = ',')
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.33, random_state=42)
 
-numpy.savetxt('Users/joaoschubnell/Documents/fineFoods/data/review_summary.csv', review_summary.toarray(), delimiter = ',')
+vect = TfidfVectorizer(stop_words='english', ngram_range=(1,3))
+
+clf = Pipeline([
+    ('tfidf', vect),
+    ('MNB', MultinomialNB())
+])
+
+clf.fit(X_train, y_train)
+
+y_predict = clf.predict(X_test)
+print("MultinomialNB")
+print(classification_report(y_test, y_predict))
+
+clf = Pipeline([
+    ('tfidf', vect),
+    ('SVC', LinearSVC())
+])
+
+clf.fit(X_train, y_train)
+
+y_predict = clf.predict(X_test)
+print("LinearSVC")
+print(classification_report(y_test, y_predict))
+
+exit()
+
+clf = Pipeline([
+    ('tfidf', vect),
+    ('XGB', XGBClassifier(n_jobs=4))
+])
+
+clf.fit(X_train, y_train)
+
+y_predict = clf.predict(X_test)
+print("XGB")
+print(classification_report(y_test, y_predict))
+
+clf = Pipeline([
+    ('tfidf', vect),
+    ('MLayerP', MLPClassifier(n_jobs=4))
+])
+
+clf.fit(X_train, y_train)
+
+y_predict = clf.predict(X_test)
+print("MLayerP")
+print(classification_report(y_test, y_predict))
