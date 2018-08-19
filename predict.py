@@ -36,10 +36,12 @@ from sklearn.svm import LinearSVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression, PassiveAggressiveClassifier
 from scipy.sparse import csr_matrix
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 vect = TfidfVectorizer(stop_words='english', ngram_range=(1,3))
 X_tfidf = vect.fit_transform(df['review/summary'].values)
 X = csr_matrix(X_tfidf)
+del X_tfidf
 y = df['review/score'].values
 
 X_train, X_test, y_train, y_test = train_test_split(
@@ -48,14 +50,25 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 
 clf = Pipeline([
-    ('PAC', PassiveAggressiveClassifier())
+    ('PAC', PassiveAggressiveClassifier(class_weight='balanced'))
 ])
 
+params = {
+	'PAC__C': numpy.logspace(0, 3, 4)
+}
+
+grid = GridSearchCV(
+	clf,
+	params,
+	n_jobs=-1,
+	cv=StratifiedKFold(1000)
+)
+
 t0 = time()
-clf.fit(X_train, y_train)
+grid.fit(X_train, y_train)
 print("PassiveAggressive done in %fs" % (time() - t0))
 
-y_predict = clf.predict(X_test)
+y_predict = grid.predict(X_test)
 print("PassiveAggressive")
 print(classification_report(y_test, y_predict))
 
@@ -76,6 +89,7 @@ print(classification_report(y_test, y_predict))
 
 
 clf = Pipeline([
+    ('PCA', SparsePCA(10)),
     ('LR', LogisticRegression(class_weight='balanced'))
 ])
 
