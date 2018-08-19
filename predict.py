@@ -61,7 +61,7 @@ grid = GridSearchCV(
 	clf,
 	params,
 	n_jobs=-1,
-	cv=StratifiedKFold(1000)
+	cv=StratifiedKFold(100)
 )
 
 t0 = time()
@@ -78,25 +78,45 @@ clf = Pipeline([
     ('SVC', LinearSVC(class_weight='balanced'))
 ])
 
+params = {
+	'SVC__C': numpy.logspace(0, 3, 4)
+}
+
+grid = GridSearchCV(
+	clf,
+	params,
+	n_jobs=-1,
+	cv=StratifiedKFold(100)
+)
 t0 = time()
-clf.fit(X_train, y_train)
+grid.fit(X_train, y_train)
 print("LinearSVC done in %fs" % (time() - t0))
 
-y_predict = clf.predict(X_test)
+y_predict = grid.predict(X_test)
 print("LinearSVC")
 print(classification_report(y_test, y_predict))
 
 
 
 clf = Pipeline([
-    ('PCA', SparsePCA(10)),
     ('LR', LogisticRegression(class_weight='balanced'))
 ])
 
+params = {
+	'LR__C': numpy.logspace(0, 3, 4)
+}
+
+grid = GridSearchCV(
+	clf,
+	params,
+	n_jobs=-1,
+	cv=StratifiedKFold(100)
+)
+
 t0 = time()
-clf.fit(X_train, y_train)
+grid.fit(X_train, y_train)
 print("LogisticRegression done in %fs" % (time() - t0))
 
-y_predict = clf.predict(X_test)
+y_predict = grid.predict(X_test)
 print("LogisticRegression")
 print(classification_report(y_test, y_predict))
