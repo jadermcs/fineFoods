@@ -3,120 +3,109 @@
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 
-import sys
-# sys.path.insert(0,'/Users/joaoschubnell/Documents/fineFoods')
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
-import pandas as pd
-import sklearn as sk
-import numpy
+import numpy as np
+from scipy.sparse import load_npz, hstack
 from time import time
 
-colnames = ["product/productId",
-            "review/userId",
-            "review/helpfulness",
-            "review/score",
-            "review/time",
-            "review/summary",
-            "review/text"]
-
-df = pd.read_csv("data/finemuged.csv", encoding="latin1", header=None,
-                 names=colnames, quotechar = "\"")
-
-df["review/date"] = pd.to_datetime(df["review/time"], unit="s")
-
-df = df[df["review/summary"].notnull()]
-
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_extraction.text import HashingVectorizer
 from sklearn.pipeline import Pipeline
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.svm import LinearSVC
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression, PassiveAggressiveClassifier
-from scipy.sparse import csr_matrix
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.decomposition import TruncatedSVD
+from sklearn.externals import joblib
 
-vect = TfidfVectorizer(stop_words='english', ngram_range=(1,3))
-X_tfidf = vect.fit_transform(df['review/summary'].values)
-X = csr_matrix(X_tfidf)
-del X_tfidf
-y = df['review/score'].values
+X_train = load_npz('data/xtrain.npz')
+X_test = load_npz('data/xtest.npz')
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.33, random_state=42)
-
-
+labels = np.load('data/label.npz')
+y_train = labels['train']
+y_test = labels['test']
 
 clf = Pipeline([
+    ('SVD', TruncatedSVD(100)),
     ('PAC', PassiveAggressiveClassifier(class_weight='balanced'))
 ])
 
 params = {
-	'PAC__C': numpy.logspace(0, 3, 4)
+	'PAC__C': np.logspace(0, 3, 4)
 }
 
 grid = GridSearchCV(
 	clf,
 	params,
-	n_jobs=-1,
-	cv=StratifiedKFold(100)
+	n_jobs=2,
+        verbose=1,
+	cv=StratifiedKFold(5)
 )
 
 t0 = time()
 grid.fit(X_train, y_train)
 print("PassiveAggressive done in %fs" % (time() - t0))
 
-y_predict = grid.predict(X_test)
+train_predict = grid.predict(X_train)
+test_predict = grid.predict(X_test)
 print("PassiveAggressive")
-print(classification_report(y_test, y_predict))
-
+print(classification_report(y_test, test_predict))
+# clf = PassiveAggressiveClassifier(class_weight='balanced')
+# clf.set_params(grid.best_params_)
+# joblib.dump(clf, 'pac.pkl')
 
 
 clf = Pipeline([
+    ('SVD', TruncatedSVD(100)),
     ('SVC', LinearSVC(class_weight='balanced'))
 ])
 
 params = {
-	'SVC__C': numpy.logspace(0, 3, 4)
+	'SVC__C': np.logspace(0, 3, 4)
 }
 
 grid = GridSearchCV(
 	clf,
 	params,
-	n_jobs=-1,
-	cv=StratifiedKFold(100)
+	n_jobs=2,
+        verbose=2,
+	cv=StratifiedKFold(5)
 )
 t0 = time()
 grid.fit(X_train, y_train)
 print("LinearSVC done in %fs" % (time() - t0))
 
-y_predict = grid.predict(X_test)
+train_predict = grid.predict(X_train)
+test_predict = grid.predict(X_test)
 print("LinearSVC")
-print(classification_report(y_test, y_predict))
-
+print(classification_report(y_test, test_predict))
+# joblib.dump(grid, 'svm.pkl')
 
 
 clf = Pipeline([
+    ('SVD', TruncatedSVD(100)),
     ('LR', LogisticRegression(class_weight='balanced'))
 ])
 
 params = {
-	'LR__C': numpy.logspace(0, 3, 4)
+	'LR__C': np.logspace(0, 3, 4)
 }
 
 grid = GridSearchCV(
 	clf,
 	params,
-	n_jobs=-1,
-	cv=StratifiedKFold(100)
+        n_jobs=2,
+        verbose=2,
+	cv=StratifiedKFold(5)
 )
 
 t0 = time()
 grid.fit(X_train, y_train)
 print("LogisticRegression done in %fs" % (time() - t0))
 
-y_predict = grid.predict(X_test)
+train_predict = grid.predict(X_train)
+test_predict = grid.predict(X_test)
 print("LogisticRegression")
-print(classification_report(y_test, y_predict))
+print(classification_report(y_test, test_predict))
+# joblib.dump(grid, 'logit.pkl')
