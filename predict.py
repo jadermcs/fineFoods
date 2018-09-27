@@ -12,9 +12,10 @@ from time import time
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression, PassiveAggressiveClassifier
+from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.decomposition import TruncatedSVD
 from sklearn.externals import joblib
@@ -40,7 +41,7 @@ grid = GridSearchCV(
 	params,
 	n_jobs=2,
         verbose=1,
-	cv=StratifiedKFold(5)
+	cv=StratifiedKFold(3)
 )
 
 t0 = time()
@@ -51,6 +52,7 @@ train_predict = grid.predict(X_train)
 test_predict = grid.predict(X_test)
 print("PassiveAggressive")
 print(classification_report(y_test, test_predict))
+print(accuracy_score(y_test, test_predict))
 # clf = PassiveAggressiveClassifier(class_weight='balanced')
 # clf.set_params(grid.best_params_)
 # joblib.dump(clf, 'pac.pkl')
@@ -62,7 +64,7 @@ clf = Pipeline([
 ])
 
 params = {
-	'SVC__C': np.logspace(0, 3, 4)
+	'SVC__C': np.logspace(0, 2, 3)
 }
 
 grid = GridSearchCV(
@@ -70,7 +72,7 @@ grid = GridSearchCV(
 	params,
 	n_jobs=2,
         verbose=2,
-	cv=StratifiedKFold(5)
+	cv=StratifiedKFold(3)
 )
 t0 = time()
 grid.fit(X_train, y_train)
@@ -80,11 +82,12 @@ train_predict = grid.predict(X_train)
 test_predict = grid.predict(X_test)
 print("LinearSVC")
 print(classification_report(y_test, test_predict))
+print(accuracy_score(y_test, test_predict))
 # joblib.dump(grid, 'svm.pkl')
 
 
 clf = Pipeline([
-    ('SVD', TruncatedSVD(100)),
+    # ('SVD', TruncatedSVD(100)),
     ('LR', LogisticRegression(class_weight='balanced'))
 ])
 
@@ -97,7 +100,7 @@ grid = GridSearchCV(
 	params,
         n_jobs=2,
         verbose=2,
-	cv=StratifiedKFold(5)
+	cv=StratifiedKFold(3)
 )
 
 t0 = time()
@@ -108,4 +111,5 @@ train_predict = grid.predict(X_train)
 test_predict = grid.predict(X_test)
 print("LogisticRegression")
 print(classification_report(y_test, test_predict))
+print(accuracy_score(y_test, test_predict))
 # joblib.dump(grid, 'logit.pkl')

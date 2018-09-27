@@ -5,6 +5,7 @@ from __future__ import (absolute_import, division,
 
 import pandas as pd
 import numpy as np
+import scipy as sci
 
 colnames = ["product/productId",
             "review/userId",
@@ -28,12 +29,15 @@ from sklearn.model_selection import train_test_split
 from scipy.sparse import save_npz
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.externals import joblib
+import spacy
+
+nlp = spacy.load('en')
 
 vect = TfidfVectorizer(stop_words='english', ngram_range=(1,2),
-                       max_features=5000)
+                       max_features=3000)
 X = vect.fit_transform(df['review/text'].values)
-y = np.where(df['review/score'].values > 2, 1, 0)
-# y = df['review/score'].values
+# y = np.where(df['review/score'].values > 2, 1, 0)
+y = df['review/score'].values
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.33, random_state=42)
