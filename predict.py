@@ -39,9 +39,9 @@ params = {
 grid = GridSearchCV(
 	clf,
 	params,
-	n_jobs=2,
+	n_jobs=8,
         verbose=1,
-	cv=StratifiedKFold(3)
+	cv=StratifiedKFold(10)
 )
 
 t0 = time()
@@ -70,9 +70,9 @@ params = {
 grid = GridSearchCV(
 	clf,
 	params,
-	n_jobs=2,
+	n_jobs=8,
         verbose=2,
-	cv=StratifiedKFold(3)
+	cv=StratifiedKFold(10)
 )
 t0 = time()
 grid.fit(X_train, y_train)
@@ -98,9 +98,9 @@ params = {
 grid = GridSearchCV(
 	clf,
 	params,
-        n_jobs=2,
+        n_jobs=8,
         verbose=2,
-	cv=StratifiedKFold(3)
+	cv=StratifiedKFold(10)
 )
 
 t0 = time()

@@ -31,10 +31,10 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.externals import joblib
 import spacy
 
-nlp = spacy.load('en')
+nlp = spacy.load('en_core_web_sm')
 
 vect = TfidfVectorizer(stop_words='english', ngram_range=(1,2),
-                       max_features=3000)
+                       max_features=5000)
 X = vect.fit_transform(df['review/text'].values)
 # y = np.where(df['review/score'].values > 2, 1, 0)
 y = df['review/score'].values
