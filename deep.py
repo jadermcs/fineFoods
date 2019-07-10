@@ -21,7 +21,7 @@ colnames = ["product/productId",
             "review/summary",
             "review/text"]
 df = pd.read_csv("data/finemuged.csv", encoding='latin1', header=None,
-                 names=colnames, quotechar="\"")
+                 names=colnames, quotechar="\"").sample(100000)
 
 def one_hot(x, maxi=5):
     arr = [0]*maxi
@@ -49,8 +49,8 @@ filter_sizes = [3,4,5]
 num_filters = 512
 drop = 0.5
 
-epochs = 100
-batch_size = 512
+epochs = 5
+batch_size = 1024
 
 # this returns a tensor
 print("Creating Model...")
